@@ -1,7 +1,7 @@
-# Polices hébergées sur le site
+# Police hébergée sur le site
 
-- Archivo (variable : graisse 400 à 900, chasse 62 % à 125 %), The Archivo Project Authors, licence SIL OFL 1.1.
-- JetBrains Mono (variable : graisse 400 à 700), JetBrains, licence SIL OFL 1.1.
+- DejaVu Sans Mono (regular), projet DejaVu, licence Bitstream Vera (modifications DejaVu dans le domaine public).
 
-Fichiers woff2 des sous-ensembles latin et latin étendu, tels que servis par Google Fonts, copiés ici
-pour que la page ne fasse aucune requête vers l'extérieur. Texte de la licence : `LICENSE.txt`.
+Sous-ensemble (latin, latin étendu, ponctuation, flèches, formes géométriques) de `DejaVuSansMono.ttf`,
+converti en woff2 avec fontTools (`pyftsubset`), copié ici pour que la page ne fasse aucune requête vers
+l'extérieur. Texte de la licence : `LICENSE.txt`.

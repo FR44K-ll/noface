@@ -1,18 +1,20 @@
 <!doctype html>
+<!-- NOFACE : version modifiée de Vesky (https://github.com/Nctrn17/vesky), licence AGPL-3.0.
+     Modifié le 2026-10-16 : nom, textes (vouvoiement, ton sec), mise en page, police, couleurs, icônes. -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#efede6">
-<meta name="description" content="Masque les visages d'une vidéo ou d'une photo avec un carré plein, directement sur ton téléphone. Rien n'est envoyé sur internet.">
-<title>vesky · masque les visages avant de poster</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Crect%20width=%2232%22%20height=%2232%22%20fill=%22%23efede6%22/%3E%3Crect%20x=%226%22%20y=%226%22%20width=%2220%22%20height=%2220%22%20fill=%22%230b0b0a%22/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0c0f14">
+<meta name="description" content="Masque les visages d'une vidéo ou d'une photo avec un carré noir plein, directement sur votre téléphone. Rien n'est envoyé sur internet.">
+<title>NOFACE · masquer les visages avant de poster</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Crect%20width=%2232%22%20height=%2232%22%20fill=%22%230c0f14%22/%3E%3Ccircle%20cx=%2216%22%20cy=%2216%22%20r=%2213.5%22%20fill=%22none%22%20stroke=%22%23c8c8c8%22%20stroke-width=%221%22/%3E%3Ctext%20x=%2216%22%20y=%2216%22%20fill=%22%23f0f0ec%22%20font-family=%22DejaVu%20Sans%20Mono,%20monospace%22%20font-size=%2210%22%20text-anchor=%22middle%22%20dominant-baseline=%22central%22%3ENF%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="vesky">
+<meta name="apple-mobile-web-app-title" content="NOFACE">
 <link rel="stylesheet" href="vendor/fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -20,9 +22,13 @@
 
 <!-- Accueil -->
 <section id="s-home" class="screen paper">
-  <header class="top"><span class="brand">vesky</span><button class="install" id="install" type="button" hidden>Installer l'app</button></header>
+  <header class="top"><span class="brand">NOFACE</span><button class="install" id="install" type="button" hidden>Installer</button></header>
   <div class="middle">
-    <h1 class="title">Masque<br>les visages.</h1>
+    <p class="label">Masquer les visages</p>
+    <h1 class="title">NOFACE</h1>
+    <hr class="rule">
+    <p class="lead">Choisissez une vidéo.<br>Je m'occupe des visages.</p>
+    <p class="note">Carré noir plein. Pas de flou. Rien dessous.</p>
     <label class="square pick" id="pickLabel" aria-disabled="true">
       <input type="file" id="file" accept="video/*,image/*" disabled>
       <span class="plus" aria-hidden="true">+</span>
@@ -31,11 +37,12 @@
   </div>
   <p id="homeError" class="error" hidden></p>
   <footer class="foot">
-    <span id="footNote">Rien ne quitte ton téléphone.</span>
-    <label class="fast"><input type="checkbox" id="fast"> Mode rapide (peut rater les très petits visages)</label>
-    <a href="verifier.html">Vérifier vesky</a>
-    <a href="https://github.com/Nctrn17/vesky">Code source</a>
+    <span id="footNote">Aucun visage ne sort d'ici. Même pas le vôtre.</span>
+    <label class="fast"><input type="checkbox" id="fast"> Mode rapide (rate les très petits visages)</label>
+    <a href="verifier.html">Vérifier</a>
+    <a href="https://github.com/FR44K-ll/noface">Code source</a>
     <a href="mentions.html">Mentions légales</a>
+    <span class="credit">Version modifiée de <a href="https://github.com/Nctrn17/vesky">Vesky</a>, licence AGPL-3.0</span>
     <span id="version"></span>
   </footer>
 </section>
@@ -43,36 +50,39 @@
 <!-- Guide d'installation sur iPhone (Apple ne permet pas d'installer depuis un bouton) -->
 <div class="sheetBack" id="iosSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="iosTitle">
-    <h2 id="iosTitle">Installer<br>sur iPhone</h2>
-    <p class="note">Gratuit, sans App Store. vesky s'ouvrira comme une app, même sans réseau.</p>
+    <p class="label">Installer</p>
+    <h2 id="iosTitle">Sur iPhone</h2>
+    <p class="note">Gratuit. Sans App Store. Marche même sans réseau. Trois gestes, je compte sur vous.</p>
     <ol class="steps">
-      <li id="iosInApp" hidden><span class="n">0</span><span class="t">Ouvre cette page dans Safari : menu ⋯ puis « Ouvrir dans Safari » ou « dans le navigateur »</span><span></span></li>
-      <li><span class="n">1</span><span class="t" id="iosShare">Touche le bouton Partager, en bas de Safari. Sur iOS 26, il est dans le menu ⋯ en bas à droite</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg></li>
-      <li><span class="n">2</span><span class="t">Choisis « Sur l'écran d'accueil »</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg></li>
-      <li><span class="n">3</span><span class="t">Touche « Ajouter », en haut à droite</span><span></span></li>
+      <li id="iosInApp" hidden><span class="n">0</span><span class="t">Ouvrez cette page dans Safari : menu ⋯ puis « Ouvrir dans Safari » ou « dans le navigateur »</span><span></span></li>
+      <li><span class="n">1</span><span class="t" id="iosShare">Touchez le bouton Partager, en bas de Safari. Sur iOS 26, il est dans le menu ⋯ en bas à droite</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg></li>
+      <li><span class="n">2</span><span class="t">Choisissez « Sur l'écran d'accueil »</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg></li>
+      <li><span class="n">3</span><span class="t">Touchez « Ajouter », en haut à droite</span><span></span></li>
     </ol>
-    <button class="close" id="iosClose" type="button">J'ai compris</button>
+    <button class="close" id="iosClose" type="button">Compris</button>
   </div>
 </div>
 
 <!-- Analyse -->
 <section id="s-scan" class="screen paper" hidden>
-  <header class="top"><span class="brand">vesky</span></header>
+  <header class="top"><span class="brand">NOFACE</span><span class="count">02 / 05</span></header>
   <div class="middle">
+    <p class="label">Analyse</p>
     <span class="big" id="scanText">0%</span>
     <div class="square frame" id="scanFrame">
       <span class="tag">Image en cours</span>
       <span class="fill up" id="scanBar"></span>
     </div>
+    <span class="note">Je cherche les visages. Ne bougez pas.</span>
   </div>
   <button class="link" id="scanCancel" type="button">Annuler</button>
 </section>
 
 <!-- Vérification -->
 <section id="s-review" class="screen ink" hidden>
-  <p class="banner" id="hint">Touche un visage pour le masquer ou le démasquer.</p>
+  <p class="banner" id="hint">Touchez un visage pour le masquer ou le démasquer. Je ne vois pas tout.</p>
   <div class="stage" id="stage">
     <canvas id="view"></canvas>
     <button class="link small" id="restoreAll" type="button" hidden></button>
@@ -95,19 +105,20 @@
       <button type="button" id="audioBtn" class="ctl mono videoOnly on" title="Garder le son">SON</button>
       <button type="button" id="export" class="go">Exporter</button>
     </div>
-    <p class="note videoOnly" id="audioNote">Son gardé. La voix aussi permet de reconnaître quelqu'un.</p>
+    <p class="note videoOnly" id="audioNote">Son gardé. La voix aussi vous trahit.</p>
   </div>
 </section>
 
 <!-- Création -->
 <section id="s-export" class="screen paper" hidden>
-  <header class="top"><span class="brand">vesky</span></header>
+  <header class="top"><span class="brand">NOFACE</span><span class="count">04 / 05</span></header>
   <div class="middle">
+    <p class="label">Export</p>
     <span class="big" id="exportPct">0%</span>
     <div class="square frame" id="exportFrame">
       <span class="fill side" id="exportBar"></span>
     </div>
-    <span class="strong">Garde l'écran allumé.</span>
+    <span class="strong">Gardez l'écran allumé. Je travaille.</span>
     <span class="note" id="exportText"></span>
   </div>
   <button class="link" id="exportCancel" type="button">Annuler</button>
@@ -115,15 +126,16 @@
 
 <!-- Résultat -->
 <section id="s-done" class="screen paper" hidden>
-  <header class="top"><span class="brand">vesky</span></header>
+  <header class="top"><span class="brand">NOFACE</span><span class="count">05 / 05</span></header>
   <div class="middle">
+    <p class="label">Terminé</p>
     <span class="big" id="doneTitle">Prête.</span>
     <div class="square frame dark">
       <video id="result" controls playsinline></video>
       <img id="resultImg" alt="Photo masquée" hidden>
     </div>
-    <span class="strong" id="doneCheck">Regarde-la en entier avant de poster.</span>
-    <span class="note">Le masque cache les visages, pas les vêtements, les tatouages, la voix ni le lieu. Aucun outil ne protège à 100 %.</span>
+    <span class="strong" id="doneCheck">Regardez-la en entier avant de poster. Je peux rater un visage.</span>
+    <span class="note">Le carré cache les visages. Pas la voix, les tatouages, les vêtements ni le lieu. Rien n'est sûr à 100 %.</span>
   </div>
   <div class="bottom">
     <a class="cta" id="download">Télécharger<span>↓</span></a>

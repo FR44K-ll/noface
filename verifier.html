@@ -1,30 +1,31 @@
 <!doctype html>
+<!-- NOFACE : version modifiée de Vesky (https://github.com/Nctrn17/vesky), licence AGPL-3.0. Modifié le 2026-10-16. -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#efede6">
-<meta name="description" content="Comment vérifier par toi-même que vesky n'envoie rien et ne garde aucune trace des visages.">
-<title>vesky · vérifier vesky</title>
+<meta name="theme-color" content="#0c0f14">
+<meta name="description" content="Comment vérifier vous-même que NOFACE n'envoie rien et ne garde aucune trace des visages.">
+<title>NOFACE · vérifier</title>
 <link rel="stylesheet" href="vendor/fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="paper">
 <main class="verif">
-  <header class="top"><a class="brand" href="./">vesky</a></header>
+  <header class="top"><a class="brand" href="./">← NOFACE</a><span class="count">Vérifier</span></header>
 
-  <h1 class="title">Vérifie<br>par toi-<br>même.</h1>
-  <p class="strong">Tu as raison de te méfier d'un outil qui touche à des vidéos de gens. Pas besoin de nous croire : tout se vérifie.</p>
+  <h1 class="title">NE ME CROYEZ<br>PAS.</h1>
+  <p class="strong">Vous avez raison de vous méfier d'un outil qui touche à des vidéos de gens. Tout se vérifie. Allez-y.</p>
 
   <section>
-    <h2>Ce que fait vesky</h2>
+    <h2>Ce que fait NOFACE</h2>
     <ul class="facts">
-      <li><b>Sur ton téléphone.</b> La vidéo est analysée dans le navigateur. Elle n'est envoyée nulle part.</li>
-      <li><b>Un carré noir plein.</b> Peint sur l'image avant qu'elle soit réenregistrée : le visage n'est ni flouté ni caché, il n'est plus dans le fichier.</li>
-      <li><b>Sans traces.</b> Le lieu, la date et le modèle du téléphone, souvent gardés dans le fichier, sont retirés.</li>
-      <li><b>Sans compte.</b> Pas de publicité, pas de mesure d'audience. Comme tout site, l'hébergeur (Cloudflare) voit qui se connecte à vesky.fr, jamais les vidéos.</li>
+      <li><b>Sur votre téléphone.</b> La vidéo est analysée dans le navigateur. Elle ne part nulle part.</li>
+      <li><b>Un carré noir plein.</b> Peint sur l'image avant qu'elle soit réenregistrée. Le visage n'est pas flouté : il n'est plus dans le fichier.</li>
+      <li><b>Sans traces.</b> Le lieu, la date et le modèle du téléphone, souvent cachés dans le fichier, sont retirés.</li>
+      <li><b>Sans compte.</b> Pas de publicité, pas de mesure d'audience. Comme pour tout site, l'hébergeur (GitHub Pages) voit qui se connecte. Jamais les vidéos.</li>
     </ul>
   </section>
 
@@ -33,29 +34,29 @@
     <div class="proof">
       <span class="n">1</span>
       <h3>Le mode avion</h3>
-      <p>Ouvre vesky.fr, attends le chargement, puis passe en mode avion. Masque une vidéo, enregistre-la : tout marche sans réseau. Rien ne peut donc partir.</p>
+      <p>Ouvrez NOFACE, attendez le chargement, passez en mode avion. Masquez une vidéo, enregistrez-la : tout marche sans réseau. Rien ne peut donc partir.</p>
     </div>
     <div class="proof">
       <span class="n">2</span>
       <h3>Le résultat</h3>
-      <p>Avant de publier, regarde la vidéo masquée en entier, image par image là où il y a du monde.</p>
+      <p>Avant de publier, regardez la vidéo masquée en entier. Image par image là où il y a du monde.</p>
     </div>
   </section>
 
   <section>
-    <h2>Si tu sais coder</h2>
+    <h2>Si vous savez coder</h2>
     <ul class="facts">
-      <li><b>Code public.</b> Sous licence libre : <a href="https://github.com/Nctrn17/vesky">github.com/Nctrn17/vesky</a>. Le site sert le même fichier, lisible, sans rien de caché.</li>
-      <li><b>Aucune trace du visage.</b> <code>test/test-sans-trace.mjs</code> prend deux vidéos identiques sauf les visages, leur pose les mêmes masques : les fichiers produits sont identiques octet pour octet. Aucun filigrane ne peut permettre de retrouver le visage.</li>
-      <li><b>Aucun envoi.</b> La page interdit au navigateur de se connecter à un autre site que vesky.fr. L'app Android n'a même pas la permission d'utiliser Internet.</li>
-      <li><b>Bibliothèques d'origine.</b> ONNX Runtime et Mediabunny : <code>test/verifier-tiers.sh</code> vérifie qu'ils sont identiques aux versions officielles. Le modèle de détection est YuNet, réentraîné pour mieux voir la nuit : sa recette est publique.</li>
+      <li><b>Code public.</b> NOFACE est une version modifiée de Vesky (<a href="https://github.com/Nctrn17/vesky">github.com/Nctrn17/vesky</a>), sous licence libre AGPL-3.0. Son code : <a href="https://github.com/FR44K-ll/noface">github.com/FR44K-ll/noface</a>. Le site sert les fichiers tels quels, lisibles, sans rien de caché.</li>
+      <li><b>Aucune trace du visage.</b> <code>test/test-sans-trace.mjs</code> prend deux vidéos identiques sauf les visages et leur pose les mêmes masques : les fichiers produits sont identiques octet pour octet. Aucun filigrane ne peut permettre de retrouver le visage.</li>
+      <li><b>Aucun envoi.</b> La page interdit au navigateur de se connecter à un autre site que le sien (<code>Content-Security-Policy</code>).</li>
+      <li><b>Bibliothèques d'origine.</b> ONNX Runtime et Mediabunny : <code>test/verifier-tiers.sh</code> vérifie qu'elles sont identiques aux versions officielles. Le modèle de détection est YuNet, réentraîné par Vesky pour mieux voir la nuit : sa recette est publique.</li>
     </ul>
   </section>
 
   <section class="limits">
-    <h2>Ce que vesky ne fait pas</h2>
-    <p>Aucun outil ne trouve tous les visages : un profil, un visage caché en partie ou très petit peut être raté. Touche l'image pour ajouter un masque à la main.</p>
-    <p>Le carré cache le visage, pas les vêtements, les tatouages, la démarche, le lieu ni la voix. Le son est gardé par défaut : coupe-le avec le bouton « Son ».</p>
+    <h2>Ce que NOFACE ne fait pas</h2>
+    <p>Je ne trouve pas tous les visages. Un profil, un visage à moitié caché ou très petit peut m'échapper. Touchez l'image pour ajouter un masque à la main.</p>
+    <p>Le carré cache le visage. Pas les vêtements, les tatouages, la démarche, le lieu ni la voix. Le son est gardé par défaut : coupez-le avec le bouton « Son ».</p>
   </section>
 
   <a class="cta" href="./">Masquer une vidéo<span>→</span></a>

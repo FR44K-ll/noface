@@ -1,17 +1,14 @@
-// vesky : masque les visages d'une vidéo ou d'une photo, entièrement dans le navigateur.
+// NOFACE : masque les visages d'une vidéo ou d'une photo, entièrement dans le navigateur.
+// Version modifiée de Vesky (https://github.com/Nctrn17/vesky), licence AGPL-3.0.
+// Modifié le 2026-10-16 pour NOFACE : nom, textes affichés (vouvoiement, ton sec), couleurs des repères,
+// redirections vers vesky.fr / skred.fr retirées.
 // Aucune requête réseau après le chargement de la page (voir aussi la politique de sécurité dans _headers).
 import { createDetector, detectBoth, neededScore } from './detector.js';
 
 // Ouvert en http (certains navigateurs, comme Opera sur iPhone, ne passent pas tout seuls en https) : le navigateur
 // coupe alors la copie hors ligne, l'export rapide et d'autres fonctions. On repart aussitôt sur l'adresse en https.
-// www.vesky.fr : même chose vers vesky.fr, pour n'avoir qu'un seul site (une seule copie hors ligne, une seule app).
-// Ancienne adresse de l'outil : on repart sur vesky.fr. Ce site-ci y est servi pendant la transition pour que les
-// copies hors ligne déjà installées se mettent à jour et suivent (une redirection côté serveur les bloquerait).
-const REDIRECT_OLD_HOST = true;
-const OLD_HOST = REDIRECT_OLD_HOST && /^(www\.)?skred\.fr$/.test(location.hostname);
-if (OLD_HOST || (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) || location.hostname === 'www.vesky.fr') {
-  const host = OLD_HOST ? 'vesky.fr' : location.host.replace(/^www\./, '');
-  location.replace('https://' + host + location.pathname + location.search + location.hash);
+if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+  location.replace('https://' + location.host + location.pathname + location.search + location.hash);
 }
 
 const $ = (id) => document.getElementById(id);
@@ -60,7 +57,7 @@ const DET_SIDE = 1280;        // avec l'option « aller plus vite »
 const MAX_SIDE = 1920;        // plus grand côté de la vidéo produite
 const MAX_SIDE_PHOTO = 4096;
 
-const VERSION = '2026-10-08.1';   // affichée en bas de page, pour savoir quelle version tourne sur un téléphone
+const VERSION = '2026-10-16.1';   // affichée en bas de page, pour savoir quelle version tourne sur un téléphone
 const DEBUG = location.hostname === 'localhost' || new URLSearchParams(location.search).has('debug');
 
 const hasRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
@@ -352,8 +349,8 @@ async function init() {
     S.parallel = workers.length;
     $('file').disabled = false;
     $('pickLabel').removeAttribute('aria-disabled');
-    $('pickText').innerHTML = matchMedia('(pointer: fine)').matches ? 'Glisse une vidéo ou une photo,<br>ou clique pour choisir' : 'Choisir une vidéo<br>ou une photo';
-    $('footNote').textContent = matchMedia('(pointer: fine)').matches ? 'Rien ne quitte ton ordinateur.' : 'Rien ne quitte ton téléphone.';
+    $('pickText').innerHTML = matchMedia('(pointer: fine)').matches ? 'Glissez une vidéo ou une photo.<br>Ou cliquez. Au choix.' : 'Choisir une vidéo<br>ou une photo';
+    $('footNote').textContent = matchMedia('(pointer: fine)').matches ? 'Aucun visage ne sort de cet ordinateur. Même pas le vôtre.' : 'Aucun visage ne sort de ce téléphone. Même pas le vôtre.';
     let file = await sharedFile();
     // Essai sur un téléphone de test (adresse avec ?essai) : la vidéo de test du site, sans passer par le sélecteur.
     if (!file && new URLSearchParams(location.search).has('essai')) {
@@ -363,8 +360,8 @@ async function init() {
   } catch (e) {
     console.error(e);
     if (window.diag) window.diag('init échoue : ' + (e && e.message) + ' | ' + String(e && e.stack).slice(0, 300));
-    $('pickText').textContent = 'Outil indisponible';
-    fail($('homeError'), "L'outil n'a pas pu se charger sur ce navigateur. Essaie avec Chrome ou Safari à jour.");
+    $('pickText').textContent = 'Indisponible. Pas de ma faute.';
+    fail($('homeError'), "Ce navigateur ne veut pas de moi. Essayez Chrome ou Safari, à jour.");
   }
 }
 
@@ -483,7 +480,7 @@ async function loadFile(file) {
     if (!w || !h) throw new Error('illisible');
   } catch (e) {
     if (window.diag) window.diag('échec lecture : ' + (e && e.message));
-    fail($('homeError'), "Ton navigateur n'arrive pas à lire ce fichier. Essaie avec un autre, ou enregistre-le dans un autre format.");
+    fail($('homeError'), "Votre navigateur ne sait pas lire ce fichier. Essayez-en un autre, ou un autre format.");
     return;
   }
 
@@ -552,7 +549,7 @@ async function scan() {
     const t0 = performance.now();
     const always = isPhoto() || sent++ % LOW_EVERY === 0;   // compté par image envoyée, pas par numéro d'image
     tasks.push(runner.detect(bitmap, side, always).then((found) => {
-      if (DEBUG) S.found.push({ found: found.map((b) => ({ ...b })), i, j });   // pour window.vesky.rejudge
+      if (DEBUG) S.found.push({ found: found.map((b) => ({ ...b })), i, j });   // pour window.noface.rejudge
       const boxes = judge(found);
       for (const b of boxes) b.at = i;   // première image servie par cette analyse
       S.detectMs += performance.now() - t0;
@@ -585,7 +582,7 @@ async function scan() {
     // Une image non analysée serait une image non masquée : on préfère tout arrêter.
     console.error(error || 'images manquantes');
     goHome();
-    fail($('homeError'), "L'analyse a échoué sur ce navigateur. Essaie avec Chrome ou Safari à jour.");
+    fail($('homeError'), "L'analyse a échoué sur ce navigateur. Essayez Chrome ou Safari, à jour.");
     return;
   }
   S.scanMs = performance.now() - started;
@@ -836,10 +833,10 @@ function paint(ctx, t, edit) {
   };
   for (const b of auto) {
     const selected = S.sel && S.sel.track === b.track;
-    if (isOff(b.track, j)) frame(b, '#ff6b5e', selected);
-    else if (selected) frame(b, '#e9ff45', true);
+    if (isOff(b.track, j)) frame(b, '#969696', selected);
+    else if (selected) frame(b, '#f0f0ec', true);
   }
-  for (const m of manualAt(t)) frame(manualRect(m), '#e9ff45', S.sel && S.sel.manual === m);
+  for (const m of manualAt(t)) frame(manualRect(m), '#f0f0ec', S.sel && S.sel.manual === m);
   ctx.setLineDash([]);
 }
 
@@ -876,7 +873,7 @@ function openReview(t) {
   time.max = S.duration;
   time.step = 1 / S.fps;
   for (const el of document.querySelectorAll('.videoOnly')) el.hidden = isPhoto();
-  $('hint').textContent = (matchMedia('(pointer: fine)').matches ? 'Clique sur' : 'Touche') + ' un visage pour le masquer ou le démasquer.';
+  $('hint').textContent = (matchMedia('(pointer: fine)').matches ? 'Cliquez sur' : 'Touchez') + ' un visage pour le masquer ou le démasquer. Je ne vois pas tout.';
   $('stats').hidden = !DEBUG || isPhoto();
   if (DEBUG && !isPhoto()) {
     const n = S.frames.length;
@@ -916,7 +913,7 @@ function drawTimeline() {
   ctx.clearRect(0, 0, W, H);
   const N = Math.max(1, S.frames.length);
   const rows = 3, rowH = Math.max(2, Math.floor(H / 6));
-  ctx.fillStyle = '#efede6';
+  ctx.fillStyle = '#969696';
   S.tracks.forEach((t, i) => {
     const idx = [...t.dets.keys()];
     const a = Math.max(0, idx[0] - TRACK.hold), b = Math.min(N - 1, idx[idx.length - 1] + TRACK.hold);
@@ -930,7 +927,7 @@ function drawTimeline() {
       s = e;
     }
   });
-  ctx.fillStyle = '#e4ff3a';
+  ctx.fillStyle = '#f0f0ec';
   for (const m of S.manual) ctx.fillRect(Math.floor(m.t0 / S.duration * W), Math.round(H * 0.85), Math.max(2, Math.ceil((m.t1 - m.t0) / S.duration * W)), rowH);
   const x = Math.round(S.t / Math.max(0.001, S.duration) * (W - 3));
   ctx.fillRect(x, 0, 3, H);
@@ -1093,7 +1090,7 @@ $('styleBtn').onclick = () => {
 $('audioBtn').onclick = () => {
   S.keepAudio = !S.keepAudio;
   $('audioBtn').classList.toggle('on', S.keepAudio);
-  $('audioNote').textContent = S.keepAudio ? 'Son gardé. La voix aussi permet de reconnaître quelqu\'un.' : 'Son coupé : la vidéo sera muette.';
+  $('audioNote').textContent = S.keepAudio ? 'Son gardé. La voix aussi vous trahit.' : 'Son coupé. Vidéo muette. Plus prudent.';
 };
 document.addEventListener('keydown', (e) => {
   if ($('s-review').hidden || isPhoto() || e.target.tagName === 'INPUT') return;
@@ -1135,14 +1132,14 @@ async function finish(blob, name, info) {
   $('result').onerror = () => {
     if (isPhoto() || !S.previewUrl) return;
     $('result').hidden = true;
-    $('doneCheck').textContent = "L'aperçu ne s'affiche pas ici. Ouvre la vidéo enregistrée et regarde-la en entier avant de poster.";
+    $('doneCheck').textContent = "Pas d'aperçu ici. Ouvrez la vidéo enregistrée et regardez-la en entier avant de poster.";
   };
   (isPhoto() ? $('resultImg') : $('result')).src = S.previewUrl;
   $('download').href = S.resultUrl;
   $('download').download = name;
   $('share').hidden = !ANDROID && !(navigator.canShare && navigator.canShare({ files: [S.resultFile] }));
   $('doneTitle').textContent = isPhoto() ? 'Prête.' : 'Prête.';
-  $('doneCheck').textContent = isPhoto() ? 'Regarde-la de près avant de poster.' : 'Regarde-la en entier avant de poster.';
+  $('doneCheck').textContent = isPhoto() ? 'Regardez-la de près avant de poster. Je peux rater un visage.' : 'Regardez-la en entier avant de poster. Je peux rater un visage.';
   $('doneInfo').textContent = `${info}, ${(blob.size / 1e6).toFixed(1).replace('.', ',')} Mo.`;
   show('done');
   // Le téléchargement part tout seul. Le bouton reste là si le navigateur l'a bloqué, ou pour recommencer.
@@ -1155,7 +1152,7 @@ async function exportPhoto() {
   drawSource(vctx);
   paint(vctx, 0, false);
   const blob = await new Promise((r) => view.toBlob(r, 'image/jpeg', 0.92));
-  if (!blob) { fail($('fatal'), "Ce navigateur n'a pas pu créer la photo."); return; }
+  if (!blob) { fail($('fatal'), "Ce navigateur n'a pas pu créer la photo. Ça arrive."); return; }
   finish(blob, 'photo-masquee.jpg', 'Fichier JPEG');
 }
 
@@ -1272,12 +1269,12 @@ async function exportVideo() {
     // L'enregistrement doit démarrer juste après un appui sur le bouton (pour le son sur iPhone) : on redemande.
     S.fast = false;
     openReview(0);
-    fail($('fatal'), "L'export rapide n'a pas marché ici. Touche Exporter à nouveau : la vidéo sera créée à vitesse normale.");
+    fail($('fatal'), "L'export rapide n'a pas marché. Touchez Exporter à nouveau : ce sera plus lent. Patience.");
     return;
   }
   const mime = pickMime();
   if (!mime || !view.captureStream) {
-    fail($('fatal'), "Ce navigateur ne sait pas créer de vidéo. Essaie avec Chrome ou Safari à jour.");
+    fail($('fatal'), "Ce navigateur ne sait pas créer de vidéo. Essayez Chrome ou Safari, à jour.");
     return;
   }
   $('fatal').hidden = true;
@@ -1325,7 +1322,7 @@ async function exportVideo() {
     S.job = null;
     await keepAwake(false);
     openReview(0);
-    if (!job.cancelled) fail($('fatal'), "La création de la vidéo a échoué sur ce navigateur. Essaie avec Chrome ou Safari à jour.");
+    if (!job.cancelled) fail($('fatal'), "La création de la vidéo a échoué sur ce navigateur. Essayez Chrome ou Safari, à jour.");
     return;
   }
   draw(0);
@@ -1387,7 +1384,7 @@ async function exportVideo() {
   if (job.cancelled) { openReview(0); return; }
   if (failed || !chunks.length) {
     openReview(0);
-    fail($('fatal'), "La création de la vidéo a échoué sur ce navigateur. Essaie avec Chrome ou Safari à jour.");
+    fail($('fatal'), "La création de la vidéo a échoué sur ce navigateur. Essayez Chrome ou Safari, à jour.");
     return;
   }
 
@@ -1408,10 +1405,10 @@ if (ANDROID) {
   $('share').textContent = 'Partager';
   $('download').addEventListener('click', async (e) => {
     e.preventDefault();
-    const where = isPhoto() ? 'Images/vesky' : 'Films/vesky';
+    const where = isPhoto() ? 'Images/noface' : 'Films/noface';
     const r = await androidSend(S.resultFile, 'save');
     $('doneInfo').textContent = $('doneInfo').textContent.replace(/ (Enregistrée|Pas enregistrée).*$/, '')
-      + (r === 'saved' ? ` Enregistrée dans ${where}.` : " Pas enregistrée : réessaie avec le bouton.");
+      + (r === 'saved' ? ` Enregistrée dans ${where}.` : " Pas enregistrée. Réessayez avec le bouton.");
   });
 }
 $('back').onclick = () => { $('result').pause(); openReview(S.t); };
@@ -1504,7 +1501,7 @@ if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.
     if (waiting) return;
     waiting = setTimeout(() => {
       waiting = null;
-      if (!S.file && !$('s-home').hidden) fail($('homeError'), "Aucune vidéo reçue : la photothèque de l'iPhone n'en transmet pas toujours. Enregistre la vidéo dans Fichiers (Partager, puis « Enregistrer dans Fichiers »), puis touche le carré et « Choisir le fichier ».");
+      if (!S.file && !$('s-home').hidden) fail($('homeError'), "Aucune vidéo reçue. La photothèque de l'iPhone n'en transmet pas toujours. Enregistrez la vidéo dans Fichiers (Partager, puis « Enregistrer dans Fichiers »), puis touchez le cercle et « Choisir le fichier ».");
     }, 4000);
   };
   $('file').addEventListener('cancel', nothingCame);
@@ -1529,7 +1526,7 @@ if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.
   if (!installed && touch && ios) {
     button.hidden = false;
     if (/Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|LinkedInApp|Twitter/.test(ua)) $('iosInApp').hidden = false;
-    else if (/CriOS|FxiOS|EdgiOS/.test(ua)) $('iosShare').textContent = "Touche le bouton Partager, dans la barre d'adresse";
+    else if (/CriOS|FxiOS|EdgiOS/.test(ua)) $('iosShare').textContent = "Touchez le bouton Partager, dans la barre d'adresse";
   }
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -1555,7 +1552,7 @@ if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.
 }
 
 // Accès aux données pour les tests : en local, ou avec ?debug (version de test de l'app Android).
-if (DEBUG) window.vesky = {
+if (DEBUG) window.noface = {
   S, frameIndex,
   retrack: (o) => { Object.assign(TRACK, o); buildTracks(S.raw); },
   // Refait le tri des détections gardées de l'analyse (S.found) avec d'autres réglages, puis le suivi.

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Vérifie que vesky.fr sert exactement le code du dépôt, à l'octet près : chaque fichier du site est téléchargé
+# Vérifie que le site en ligne sert exactement le code du dépôt, à l'octet près : chaque fichier du site est téléchargé
 # et comparé à sa version dans le dernier commit (pas aux fichiers modifiés sur le disque).
 # Vérifie aussi que la politique de sécurité envoyée par le site est celle de _headers.
 # Besoin : git, curl.
 # Usage : bash outils/verifier-site.sh   (depuis la racine du dépôt)
-#         SITE=https://autre.adresse bash outils/verifier-site.sh
+# NOFACE : pas d'adresse par défaut (modifié le 2026-10-16). Usage : SITE=https://adresse.du.site bash outils/verifier-site.sh
 set -e
-site=${SITE:-https://vesky.fr}
+site=${SITE:?Donnez l\'adresse du site : SITE=https://… bash outils/verifier-site.sh}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 ok=0

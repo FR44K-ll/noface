@@ -1,9 +1,15 @@
-# vesky
+# NOFACE
 
 *[English version](README.en.md)*
 
 Masquer les visages d'une vidéo ou d'une photo avant de la poster, directement dans le navigateur du téléphone.
-Rien n'est envoyé à un serveur : pas de compte, pas de statistiques, pas de fichier tiers chargé depuis un autre site.
+Rien n'est envoyé à un serveur : pas de compte, pas de statistiques, pas de fichier chargé depuis un autre site.
+
+**Site : https://fr44k-ll.github.io/noface/** · Code : https://github.com/FR44K-ll/noface
+
+> **NOFACE est une version modifiée de [Vesky](https://github.com/Nctrn17/vesky), sous licence AGPL-3.0.**
+> Le moteur (détection, suivi, export, tests) vient de Vesky. NOFACE change le nom, les textes,
+> la mise en page, la police, les couleurs et les icônes. Merci aux auteurs de Vesky.
 
 ## Pourquoi
 
@@ -12,94 +18,56 @@ peuvent être défaits par une IA. Un carré plein, non : il n'y a plus d'image 
 
 ## Ce que fait l'outil
 
-1. Tu choisis une vidéo ou une photo.
+1. Vous choisissez une vidéo ou une photo.
 2. La vidéo est analysée 30 fois par seconde, et un carré noir (ou un émoji posé sur un carré noir) est placé sur chaque visage, sur toutes les images.
-3. Tu vérifies : tu ajoutes un masque là où un visage a été raté, tu retires un masque posé à tort.
+3. Vous vérifiez : vous ajoutez un masque là où un visage a été raté, vous retirez un masque posé à tort.
 4. Le fichier est entièrement refait : le lieu, la date et le modèle du téléphone du fichier d'origine disparaissent.
 
 ## Ce que l'outil ne fait pas
 
 - Il ne cache ni les vêtements, ni les tatouages, ni la voix, ni le lieu.
-- Il peut rater un visage. La vérification à l'œil avant de poster reste indispensable.
+- Il peut rater un visage. Regarder le résultat avant de poster reste indispensable.
 - Il ne promet pas une protection totale.
 
 ## Comment le vérifier
 
-Pas besoin de nous croire sur parole : chacun de ces points se vérifie sans rien installer de spécial.
-
-- **App Android : aucune permission, pas même internet.** Dans les réglages du téléphone, Applications → vesky →
-  Autorisations : la liste est vide. Sans la permission internet, Android interdit lui-même à l'app d'envoyer quoi que ce soit.
-  Le fichier qui le déclare : `android/app/src/main/AndroidManifest.xml`.
-- **Site : en mode avion.** Ouvre vesky.fr une première fois avec du réseau, puis passe en mode avion et traite une vidéo :
+- **En mode avion.** Ouvrez le site une première fois avec du réseau, passez en mode avion, traitez une vidéo :
   tout marche. Sans réseau, rien ne peut partir.
-- **Site : l'onglet Réseau du navigateur.** Sur ordinateur, ouvre les outils de développement (F12), onglet Réseau,
-  puis traite une vidéo. Après le chargement de la page, aucune requête n'apparaît pendant l'analyse ni pendant l'export.
-- **Site : la politique de sécurité.** Chaque fichier du site est servi avec l'en-tête `Content-Security-Policy`
-  (`_headers`), visible dans l'onglet Réseau. `connect-src 'self'` interdit au navigateur toute connexion vers un autre site.
-  vesky.fr lui-même ne sert que des fichiers statiques : aucun code côté serveur ne pourrait recevoir une vidéo.
+- **L'onglet Réseau du navigateur.** Sur ordinateur (F12, onglet Réseau) : après le chargement de la page,
+  aucune requête pendant l'analyse ni pendant l'export.
+- **La politique de sécurité.** `Content-Security-Policy` (`index.html` et `_headers`) : `connect-src 'self'`
+  interdit au navigateur toute connexion vers un autre site.
 - **Le test automatique** (voir « Tester ») échoue si une seule requête part après le chargement de la page.
-- **Le code est public.** Les envois réseau se cherchent en quelques secondes : `grep -rn "fetch(" app.js sw.js`.
-- **Le site sert ce code-là.** `bash outils/verifier-site.sh` télécharge chaque fichier de vesky.fr et le compare,
-  à l'octet près, au dernier commit du dépôt (voir « Tester »).
+- **Le code est public.** `grep -rn "fetch(" app.js sw.js`.
+
+## Identité visuelle
+
+- Couleurs : noir, gris, blanc. Rien d'autre. Fond `#0C0F14`, texte `#F0F0EC`, gris `#969696`, labels `#828282`,
+  traits `#4C4E52`, cercles `#C8C8C8`.
+- Police : DejaVu Sans Mono, servie par le site (`vendor/fonts/`), jamais depuis un autre serveur.
+- Labels en capitales espacées, traits fins, beaucoup de vide. Pas d'ombres, pas de dégradés, pas d'effets.
+- Icône : cercle fin et « NF » (`icons/`, `favicon.ico`, `icon.svg`).
+- Ton : sec, court, vouvoiement. Les mises en garde restent dites clairement.
 
 ## Comment c'est fait
 
 - Site statique, sans étape de construction : `index.html`, `style.css`, `app.js`.
-- Détection des visages : modèle YuNet_n réentraîné pour mieux voir la nuit (`models/README.md`), exécuté par ONNX Runtime Web (`detector.js`, `detect-worker.js`),
-  sur plusieurs cœurs en parallèle. Les images très sombres sont analysées deux fois, telles quelles et éclaircies,
-  et les visages trouvés sont réunis.
+- Détection des visages : modèle YuNet_n réentraîné par Vesky pour mieux voir la nuit (`models/README.md`),
+  exécuté par ONNX Runtime Web (`detector.js`, `detect-worker.js`), sur plusieurs cœurs en parallèle.
 - Suivi : une seule case par visage d'une image à l'autre, agrandie de 30 %, prolongée de quelques images avant et après.
-- Export rapide : le fichier d'origine est relu image par image, chaque image est masquée puis réencodée
-  par l'encodeur du téléphone (WebCodecs, via Mediabunny). Plus rapide que la durée de la vidéo.
-- Export de secours, si le navigateur ne sait pas faire l'export rapide : enregistrement de l'image masquée
-  pendant qu'elle défile (canvas + MediaRecorder). `?lent` dans l'adresse force ce mode.
+- Export rapide : chaque image est masquée puis réencodée par l'encodeur du téléphone (WebCodecs, via Mediabunny).
+  Export de secours (canvas + MediaRecorder) si le navigateur ne sait pas faire l'export rapide. `?lent` force ce mode.
 - Photo : JPEG.
-- Installable sur l'écran d'accueil (`manifest.webmanifest`) et utilisable sans réseau : `sw.js` garde une copie
-  des fichiers du site sur le téléphone. Avec du réseau, c'est toujours la version en ligne qui est servie.
-- Tout est servi par le site lui-même, et une politique de sécurité (`_headers`) interdit au navigateur
-  toute connexion vers un autre site.
+- Installable sur l'écran d'accueil (`manifest.webmanifest`) et utilisable sans réseau (`sw.js`).
 
 ## Rangement
 
-- À la racine : le site lui-même (`index.html`, `app.js`, `style.css`…), avec `models/` (le modèle de détection),
-  `vendor/` (bibliothèques et polices) et `icons/`.
-- `outils/` : construire le site publié, le servir en local, vérifier que vesky.fr sert bien ce dépôt.
+- À la racine : le site (`index.html`, `app.js`, `style.css`…), avec `models/`, `vendor/` (bibliothèques et police) et `icons/`.
+- `outils/` : construire le site publié, le servir en local, comparer un site en ligne au dépôt.
 - `test/` : les tests du site.
-- `entrainement/` : mesure et entraînement du modèle de détection.
-- `android/` et `fastlane/` : l'app Android et les textes de sa fiche.
-
-## Mettre en ligne
-
-Adresse : https://vesky.fr. Hébergé sur Cloudflare (Workers, fichiers statiques seulement, réglages dans `wrangler.jsonc`).
-
-Publier :
-
-```bash
-node outils/build.mjs
-npx wrangler deploy
-```
-
-## App Android
-
-Dossier `android/` : le site entier rangé dans une app, affiché par une WebView (`MainActivity.java`).
-L'app n'a aucune permission, pas même internet. Elle fait ce que le navigateur faisait seul : choisir un fichier,
-enregistrer le résultat dans la galerie (Films/vesky, Images/vesky), le partager, garder l'écran allumé, et ouvrir
-une vidéo partagée depuis la galerie. Les fichiers du site sont copiés dans l'app à chaque construction,
-d'après la même liste que `outils/build.mjs`. Textes de la fiche : `fastlane/metadata/android/`.
-
-Construire (JDK 17 ou plus, SDK Android 36) :
-
-```bash
-cd android && ./gradlew assembleRelease
-```
-
-L'APK sort dans `android/app/build/outputs/apk/release/`. Il est signé seulement si le fichier décrivant la clé
-existe (`~/.vesky-signature/keystore.properties`, ou le chemin donné par `VESKY_KEYSTORE`).
-La version de test (`assembleDebug`) embarque deux vidéos de `test/` et ouvre la page avec `?debug`,
-pour piloter l'app depuis l'ordinateur (`adb forward`, puis le même protocole que `test/run-test.mjs`).
-
-Distribution : APK sur les publications GitHub, repris par IzzyOnDroid. Pas sur le dépôt principal de F-Droid
-pour l'instant : il refuse les fichiers `.wasm` déjà compilés, comme celui d'ONNX Runtime.
+- `entrainement/` : mesure et entraînement du modèle de détection (repris de Vesky tel quel).
+- `android/` et `fastlane/` : l'app Android **de Vesky**, pas encore adaptée à NOFACE (nom, paquet `fr.vesky.app`,
+  icônes). Ne pas la publier sous ce nom.
 
 ## Lancer en local
 
@@ -112,88 +80,45 @@ Puis ouvrir http://localhost:5173.
 ## Tester
 
 ```bash
-python test/make-test-video.py
-node test/run-test.mjs
-```
-
-Le test ouvre Chrome sans fenêtre, analyse une vidéo dont la position des visages est connue, exporte,
-puis vérifie dans le fichier produit, image par image et sur 25 points de chaque visage, qu'aucun visage
-n'est visible, que les métadonnées ont disparu et qu'aucune requête n'est partie après le chargement de la page.
-Il échoue (code de sortie 1) au moindre défaut.
-
-### Aucune trace du visage dans le fichier
-
-```bash
+python test/make-test-video.py      # besoin : opencv-python, scikit-image, ffmpeg
+node test/run-test.mjs              # Node 22+, ou node --experimental-websocket sur Node 20
 python test/make-faces-pair.py
 node test/test-sans-trace.mjs
 ```
 
-Deux vidéos identiques au pixel près, sauf l'intérieur des visages. La seconde reçoit exactement les mêmes
-masques que la première, puis les deux sont exportées : les fichiers produits doivent être identiques octet
-pour octet. Le résultat ne dépend donc pas du visage d'origine, et aucun filigrane ne peut permettre de le
-retrouver. Le carré noir est peint sur l'image avant qu'elle parte à l'encodeur, qui ne voit jamais le visage.
+Chrome se choisit avec la variable `CHROME` (par exemple `CHROME=/usr/bin/google-chrome`).
+`run-test.mjs` analyse une vidéo dont la position des visages est connue, exporte, puis vérifie image par image
+qu'aucun visage n'est visible, que les métadonnées ont disparu et qu'aucune requête n'est partie.
 
-### Fichiers tiers
+`bash test/verifier-tiers.sh` vérifie qu'ONNX Runtime et Mediabunny sont identiques aux versions officielles.
 
-```bash
-bash test/verifier-tiers.sh
-```
+## Mettre en ligne
 
-Télécharge ONNX Runtime et Mediabunny depuis npm et vérifie que les fichiers du dépôt sont identiques aux
-originaux, à l'octet près. Seule retouche, refaite par le script : la ligne `sourceMappingURL` de `ort.wasm.min.mjs`
-est vidée. Le modèle, lui, a été réentraîné pour vesky : sa recette est dans `entrainement/entrainer-nuit.sh`.
+Adresse : https://fr44k-ll.github.io/noface/, servie par GitHub Pages depuis la racine de la branche `main`.
+Chaque `git push` sur `main` met le site à jour. Le fichier `.nojekyll` empêche GitHub de retraiter les fichiers.
 
-### Le site en ligne
+GitHub Pages ignore `_headers` : la politique de sécurité qui compte est celle écrite dans chaque page
+(`<meta http-equiv="Content-Security-Policy">`). Elle interdit toujours toute connexion vers un autre site.
+Ce que Pages ne permet pas : interdire l'affichage du site dans un cadre (`frame-ancestors`, `X-Frame-Options`).
+Rien d'autre ne manque : l'outil n'a pas besoin d'isolation cross-origin (ONNX Runtime tourne sur un seul fil
+par moteur, `detector.js`), et tous les chemins sont relatifs, donc le sous-dossier `/noface/` ne gêne pas.
+Seul `404.html` renvoie vers `/noface/` en dur.
 
-```bash
-bash outils/verifier-site.sh
-```
-
-Télécharge chaque fichier servi par vesky.fr (la même liste que `outils/build.mjs`) et le compare, à l'octet près,
-à sa version dans le dernier commit. Vérifie aussi que l'en-tête `Content-Security-Policy` reçu est celui de `_headers`.
-Autre adresse : `SITE=https://… bash outils/verifier-site.sh`.
-
-### Précision de la détection
-
-`entrainement/eval-faces.py` mesure les visages ratés et les faux masques sur deux banques de photos annotées :
-WIDER FACE (validation, de jour) et DARK FACE (de nuit). `entrainement/eval-centerface.py` compare la même règle
-à CenterFace, le modèle de [deface](https://github.com/ORB-HD/deface).
-
-## Limites connues
-
-- Avec l'export de secours, l'export dure aussi longtemps que la vidéo.
-- L'analyse est lente sur les longues vidéos.
-- Test automatique sur Chrome pour ordinateur. Essayé à la main sur Android et sur iPhone.
+`wrangler.jsonc` reste prêt pour Cloudflare, si un jour un domaine est choisi.
 
 ## Composants tiers
 
-- [YuNet_n](https://github.com/ShiqiYu/libfacedetection.train), licence BSD-3, réentraîné sur WIDER FACE et DARK FACE (`models/`).
+- [Vesky](https://github.com/Nctrn17/vesky), licence AGPL-3.0 : le projet d'origine.
+- [YuNet_n](https://github.com/ShiqiYu/libfacedetection.train), licence BSD-3, réentraîné par Vesky (`models/`).
 - [ONNX Runtime Web](https://github.com/microsoft/onnxruntime), licence MIT (`vendor/ort/`).
 - [Mediabunny](https://github.com/Vanilagy/mediabunny), licence MPL-2.0 (`vendor/mediabunny/`).
-- Polices Archivo et JetBrains Mono, licence SIL OFL 1.1 (`vendor/fonts/`).
-
-## Contribuer
-
-Avant d'ouvrir une PR, lis [CONTRIBUTING.md](CONTRIBUTING.md).
+- [DejaVu Sans Mono](https://dejavu-fonts.github.io/), licence Bitstream Vera, modifications DejaVu dans le domaine public (`vendor/fonts/`).
 
 ## Licence
 
-Code sous licence [AGPL-3.0](LICENSE). Tu peux le copier, le modifier et le mettre en ligne,
-à condition de publier le code de ta version sous la même licence, y compris si elle n'est servie que sur un site.
+Code sous licence [AGPL-3.0](LICENSE), comme Vesky. Vous pouvez le copier, le modifier et le mettre en ligne,
+à condition de publier le code de votre version sous la même licence, y compris si elle n'est servie que sur un site.
+Les fichiers modifiés par rapport à Vesky le signalent en tête de fichier.
 
-### Héberger ta propre copie
-
-La version officielle est https://vesky.fr. Si tu mets ta propre copie en ligne :
-
-1. **Dis que c'est une copie non officielle,** sur la page d'accueil, avec un lien vers ce dépôt.
-2. **Mets un lien visible vers le code de ta version,** sur le site lui-même. Si tu as modifié un seul fichier,
-   même le style ou une page de texte, c'est ton code qu'il faut publier, pas un lien vers ce dépôt (AGPL, article 13).
-3. **Indique dans chaque fichier modifié** que tu l'as modifié, et quand (AGPL, article 5, a).
-4. **Garde la licence** (`LICENSE`) et les mentions des composants tiers.
-5. **Protège-toi dans les mentions légales.** La loi française permet à un particulier de rester anonyme
-   en ne donnant ses coordonnées qu'à l'hébergeur. N'y mets pas ton adresse personnelle.
-
-**Ne charge rien depuis un autre site.** Les gens qui utilisent cet outil veulent protéger des visages, parfois
-en manifestation. Une police Google Fonts, un script de statistiques ou une image hébergée ailleurs suffit à
-envoyer leur adresse IP à un tiers dès qu'ils ouvrent la page. Garde tout sur ton propre serveur, comme dans `vendor/`,
-et ne desserre pas la politique de sécurité de `_headers`. Si tu modifies `app.js`, `sw.js` ou `_headers`, dis-le clairement.
+**Ne chargez rien depuis un autre site.** Une police Google Fonts, un script de statistiques ou une image hébergée
+ailleurs suffit à envoyer l'adresse IP des visiteurs à un tiers. Gardez tout sur votre propre serveur.

@@ -1,6 +1,8 @@
-# Contribuer à vesky
+# Contribuer à NOFACE
 
-Merci de vouloir aider. vesky protège des personnes filmées : chaque changement est relu avant d'entrer,
+*NOFACE est une version modifiée de [Vesky](https://github.com/Nctrn17/vesky). Pour une amélioration du moteur (détection, export), proposez-la aussi à Vesky.*
+
+Merci de vouloir aider. NOFACE protège des personnes filmées : chaque changement est relu avant d'entrer,
 et certains sont refusés même s'ils partent d'une bonne idée. Ce fichier dit à quoi t'attendre, pour que tu
 ne passes pas des heures sur une PR qui ne pourra pas être acceptée.
 
@@ -15,7 +17,7 @@ Tu peux écrire en français ou en anglais.
 ## Ce qui est refusé d'office
 
 - **Une protection partielle présentée comme une protection.** Flou, mosaïque, voix légèrement déformée :
-  ces effets donnent l'impression d'être caché sans l'être vraiment. vesky met un carré plein parce qu'il
+  ces effets donnent l'impression d'être caché sans l'être vraiment. NOFACE met un carré plein parce qu'il
   n'y a plus rien dessous. Un nouvel effet doit tenir la même promesse, ou ne pas exister.
 - **Toute requête après le chargement de la page.** Pas de statistiques, pas de police, script ou fichier
   chargé depuis un autre site, pas de serveur. Rien ne doit quitter le téléphone. La règle
@@ -57,7 +59,7 @@ Un test existant ne se modifie pas pour le faire passer : si tu penses qu'il est
 
 ## Textes affichés
 
-- L'app **tutoie**, partout.
+- L'app **vouvoie**, partout. Ton sec, pince-sans-rire.
 - Phrases courtes, mots simples : beaucoup de gens l'utilisent dans l'urgence, sur un téléphone.
 - Pas de tiret cadratin (—).
 - Ne jamais promettre plus que ce que fait l'outil. Ce qu'il ne fait pas (vêtements, tatouages, lieu, voix)
@@ -65,5 +67,5 @@ Un test existant ne se modifie pas pour le faire passer : si tu penses qu'il est
 
 ## Licence
 
-vesky est sous licence [AGPL-3.0](LICENSE). En proposant une PR, tu acceptes que ton code soit publié sous
+NOFACE est sous licence [AGPL-3.0](LICENSE), comme Vesky. En proposant une PR, tu acceptes que ton code soit publié sous
 cette même licence.
