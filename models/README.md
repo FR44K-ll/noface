@@ -16,3 +16,17 @@ Mesuré avec la règle du site (`entrainement/eval-faces.py`), contre l'ancien m
 | Celui-ci | 64 | 938 | 332 |
 
 Le décodage des sorties (dans `detector.js`) suit `modules/objdetect/src/face_detect.cpp` d'OpenCV.
+
+# Modèle des plaques d'immatriculation (ajout NOFACE, licence MIT)
+
+`plaques.onnx` est le fichier `yolo-v9-t-512-license-plates-end2end.onnx` publié tel quel par
+[open-image-models](https://github.com/ankandrew/open-image-models) (ankandrew, licence MIT, `LICENSE-plaques.txt`),
+release « assets ». YOLOv9-t, entrée 512 x 512, NMS incluse dans le modèle. 7,8 Mo.
+SHA-256 : `746fdd358ec110418775d7c9d8d07910d48b1a21471f92bf4421f6510d6daade`.
+
+Chiffres publiés par l'auteur (version 512) : précision 0,955, rappel 0,901, mAP50 0,948. Architecture YOLOv9
+(Wang et Liao, 2024). Le jeu d'entraînement n'est pas détaillé par l'auteur.
+
+Utilisation (`detector.js`, `createPlateDetector`) : image entière, puis morceaux qui se recouvrent (4 pour une photo,
+2 pour une vidéo, aucun en mode rapide) pour les plaques lointaines. Seuil 0,25 pour ouvrir un masque, 0,1 pour
+prolonger un masque déjà ouvert. Vidéo : une image analysée sur deux, le suivi bouche les trous.

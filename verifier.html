@@ -24,6 +24,8 @@
     <ul class="facts">
       <li><b>Sur votre téléphone.</b> La vidéo est analysée dans le navigateur. Elle ne part nulle part.</li>
       <li><b>Un carré noir plein.</b> Peint sur l'image avant qu'elle soit réenregistrée. Le visage n'est pas flouté : il n'est plus dans le fichier.</li>
+      <li><b>Le style ne change rien.</b> Rond, 444, émoji ou image : un fond opaque couvre toute la case avant le décor. Une image transparente laisse voir du noir. L'image choisie ne quitte pas l'appareil.</li>
+      <li><b>Plaques, en option.</b> Cochez « Masquer aussi les plaques » : rectangle noir, toujours. Le modèle est chargé avec la page, rien ne part ensuite.</li>
       <li><b>Sans traces.</b> Le lieu, la date et le modèle du téléphone, souvent cachés dans le fichier, sont retirés.</li>
       <li><b>Sans compte.</b> Pas de publicité, pas de mesure d'audience. Comme pour tout site, l'hébergeur (GitHub Pages) voit qui se connecte. Jamais les vidéos.</li>
     </ul>
@@ -49,13 +51,14 @@
       <li><b>Code public.</b> NOFACE est une version modifiée de Vesky (<a href="https://github.com/Nctrn17/vesky">github.com/Nctrn17/vesky</a>), sous licence libre AGPL-3.0. Son code : <a href="https://github.com/FR44K-ll/noface">github.com/FR44K-ll/noface</a>. Le site sert les fichiers tels quels, lisibles, sans rien de caché.</li>
       <li><b>Aucune trace du visage.</b> <code>test/test-sans-trace.mjs</code> prend deux vidéos identiques sauf les visages et leur pose les mêmes masques : les fichiers produits sont identiques octet pour octet. Aucun filigrane ne peut permettre de retrouver le visage.</li>
       <li><b>Aucun envoi.</b> La page interdit au navigateur de se connecter à un autre site que le sien (<code>Content-Security-Policy</code>).</li>
-      <li><b>Bibliothèques d'origine.</b> ONNX Runtime et Mediabunny : <code>test/verifier-tiers.sh</code> vérifie qu'elles sont identiques aux versions officielles. Le modèle de détection est YuNet, réentraîné par Vesky pour mieux voir la nuit : sa recette est publique.</li>
+      <li><b>Bibliothèques d'origine.</b> ONNX Runtime et Mediabunny : <code>test/verifier-tiers.sh</code> vérifie qu'elles sont identiques aux versions officielles. Le modèle de détection est YuNet, réentraîné par Vesky pour mieux voir la nuit : sa recette est publique. Les plaques : YOLOv9-t d'open-image-models (licence MIT). <code>test/test-masques.py</code> vérifie qu'aucun style ne laisse passer un pixel du visage.</li>
     </ul>
   </section>
 
   <section class="limits">
     <h2>Ce que NOFACE ne fait pas</h2>
     <p>Je ne trouve pas tous les visages. Un profil, un visage à moitié caché ou très petit peut m'échapper. Touchez l'image pour ajouter un masque à la main.</p>
+    <p>Les plaques lointaines, de biais ou dans le noir peuvent m'échapper aussi.</p>
     <p>Le carré cache le visage. Pas les vêtements, les tatouages, la démarche, le lieu ni la voix. Le son est gardé par défaut : coupez-le avec le bouton « Son ».</p>
   </section>
 

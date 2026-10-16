@@ -107,3 +107,67 @@ export async function createDetector(base) {
     return kept;
   };
 }
+
+// ---------- Plaques d'immatriculation (ajout NOFACE, 2026-10-16) ----------
+// Modèle YOLOv9-t 512 « license-plates-end2end » d'open-image-models (ankandrew, licence MIT), voir models/README.md.
+// Il sort directement les cadres déjà triés (NMS incluse) : [lot, x1, y1, x2, y2, classe, score], en pixels de l'entrée.
+// Les octets du modèle sont remis par la page (chargés une seule fois au démarrage) : aucune requête ici.
+const PLATE_SIDE = 512;
+export async function createPlateDetector(base, bytes) {
+  ort.env.wasm.wasmPaths = base + 'vendor/ort/';
+  ort.env.wasm.numThreads = 1;
+  const session = await ort.InferenceSession.create(bytes, { executionProviders: ['wasm'] });
+  const S = PLATE_SIDE;
+  const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(S, S) : Object.assign(document.createElement('canvas'), { width: S, height: S });
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const buffer = new Float32Array(3 * S * S);
+
+  // Une passe sur la zone (sx, sy, sw, sh) de la source, mise à l'échelle dans un carré gris, comme à l'entraînement.
+  async function pass(source, sx, sy, sw, sh, minScore) {
+    const r = Math.min(S / sw, S / sh);
+    const dw = Math.round(sw * r), dh = Math.round(sh * r);
+    const ox = Math.round((S - dw) / 2 - 0.1), oy = Math.round((S - dh) / 2 - 0.1);
+    ctx.fillStyle = 'rgb(114,114,114)';
+    ctx.fillRect(0, 0, S, S);
+    ctx.drawImage(source, sx, sy, sw, sh, ox, oy, dw, dh);
+    const rgba = ctx.getImageData(0, 0, S, S).data;
+    const n = S * S;
+    for (let i = 0, p = 0; i < n; i++, p += 4) {
+      buffer[i] = rgba[p] / 255;
+      buffer[n + i] = rgba[p + 1] / 255;
+      buffer[2 * n + i] = rgba[p + 2] / 255;
+    }
+    const out = await session.run({ images: new ort.Tensor('float32', buffer, [1, 3, S, S]) });
+    const d = out[Object.keys(out)[0]].data;
+    const found = [];
+    for (let k = 0; k + 6 < d.length; k += 7) {
+      const s = d[k + 6];
+      if (s < minScore) continue;
+      const x1 = (d[k + 1] - ox) / r + sx, y1 = (d[k + 2] - oy) / r + sy;
+      const x2 = (d[k + 3] - ox) / r + sx, y2 = (d[k + 4] - oy) / r + sy;
+      found.push({ x: x1, y: y1, w: x2 - x1, h: y2 - y1, s });
+    }
+    return found;
+  }
+
+  // Image entière, puis (si tiles) des morceaux qui se recouvrent : une plaque lointaine n'a que quelques pixels
+  // une fois l'image entière réduite à 512, le modèle la voit bien mieux dans un morceau.
+  // tiles : 0 (image entière seule), 2 (deux moitiés dans le sens long), 4 (quatre quarts).
+  return async function detectPlates(source, sw, sh, tiles, minScore) {
+    let found = await pass(source, 0, 0, sw, sh, minScore);
+    const zones = [];
+    if (tiles === 2) {
+      if (sw >= sh) { const tw = Math.round(sw * 0.6); zones.push([0, 0, tw, sh], [sw - tw, 0, tw, sh]); }
+      else { const th = Math.round(sh * 0.6); zones.push([0, 0, sw, th], [0, sh - th, sw, th]); }
+    } else if (tiles === 4) {
+      const tw = Math.round(sw * 0.6), th = Math.round(sh * 0.6);
+      for (const x of [0, sw - tw]) for (const y of [0, sh - th]) zones.push([x, y, tw, th]);
+    }
+    for (const z of zones) found = found.concat(await pass(source, ...z, minScore));
+    // Doublons (image entière et morceaux) : on garde le plus sûr.
+    found = found.filter((b) => b.w > 1 && b.h > 1).sort((a, b) => b.s - a.s);
+    const kept = [];
+    for (const b of found) if (!kept.some((k) => overlap(k, b) > 0.5)) kept.push(b);
+    return kept;
+  };
+}

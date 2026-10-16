@@ -23,9 +23,26 @@ by AI. A solid square cannot: there is no image left underneath.
 3. You review: add a mask where a face was missed, remove a mask placed by mistake.
 4. The file is fully re-encoded: location, date and phone model from the original file are gone.
 
+### Mask styles
+
+Square button on the review screen: black square (default, safest), circle, "444" logo, emoji (presets or any typed
+emoji), or an image picked from the device (transparent PNG recommended). Whatever the style, an opaque fill covers the
+whole box first: circle and 444 are discs through the four corners of the box, emoji and image sit on a black square.
+Transparent pixels show black, never the face. The picked image is read locally, never uploaded. Same rendering for
+photo and video.
+
+### License plates (option)
+
+"Masquer aussi les plaques" checkbox on the home screen, **off by default**, remembered on the device. Plates always
+get a black rectangle regardless of the face style, and can be removed/restored by hand like faces. Off by default
+because video analysis becomes about 3x slower (measured on desktop, more on phones) and most protest videos don't
+need it. The model loads with the rest of the site, before a file is picked: no request afterwards either way.
+Model: YOLOv9-t from [open-image-models](https://github.com/ankandrew/open-image-models), MIT, 7.8 MB
+(`models/README.md`). It can miss distant, skewed or dark plates: check.
+
 ## What it does not do
 
-- It does not hide clothes, tattoos, voice or location.
+- It does not hide clothes, tattoos, voice or location. Plates only when the option is on.
 - It can miss a face. Watching the result before posting is mandatory.
 - It does not promise full protection.
 
@@ -71,6 +88,7 @@ python test/make-test-video.py      # needs opencv-python, scikit-image, ffmpeg
 node test/run-test.mjs              # Node 22+, or node --experimental-websocket on Node 20
 python test/make-faces-pair.py
 node test/test-sans-trace.mjs
+python test/test-masques.py   # mask styles and plates (Playwright)
 ```
 
 Pick Chrome with the `CHROME` variable (e.g. `CHROME=/usr/bin/google-chrome`).
@@ -89,6 +107,7 @@ worker), and all paths are relative, so the `/noface/` subpath is fine. Only `40
 
 - [Vesky](https://github.com/Nctrn17/vesky), AGPL-3.0: the original project.
 - [YuNet_n](https://github.com/ShiqiYu/libfacedetection.train), BSD-3, retrained by Vesky (`models/`).
+- YOLOv9-t 512 plate detector from [open-image-models](https://github.com/ankandrew/open-image-models) (ankandrew), MIT (`models/plaques.onnx`, `models/LICENSE-plaques.txt`).
 - [ONNX Runtime Web](https://github.com/microsoft/onnxruntime), MIT (`vendor/ort/`).
 - [Mediabunny](https://github.com/Vanilagy/mediabunny), MPL-2.0 (`vendor/mediabunny/`).
 - [DejaVu Sans Mono](https://dejavu-fonts.github.io/), Bitstream Vera licence, DejaVu changes in the public domain (`vendor/fonts/`).

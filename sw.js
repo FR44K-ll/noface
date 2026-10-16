@@ -1,4 +1,4 @@
-// NOFACE (version modifiée de Vesky, AGPL-3.0). Modifié le 2026-10-16 : nom du cache, nouvelle police.
+// NOFACE (version modifiée de Vesky, AGPL-3.0). Modifié le 2026-10-16 : nom du cache, nouvelle police, modèle des plaques.
 // Service worker : garde une copie des fichiers du site sur le téléphone, pour que NOFACE marche sans réseau.
 // Avec du réseau, c'est toujours la version en ligne qui est servie (et la copie est mise à jour).
 // Sans réseau, c'est la copie. Aucune requête ne part vers un autre site.
@@ -14,6 +14,7 @@ const FILES = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'models/yunet.onnx',
+  'models/plaques.onnx',
   'vendor/fonts/fonts.css',
   'vendor/fonts/dejavu-sans-mono.woff2',
   'vendor/ort/ort.wasm.min.mjs',

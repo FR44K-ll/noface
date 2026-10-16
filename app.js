@@ -2,8 +2,9 @@
 // Version modifiée de Vesky (https://github.com/Nctrn17/vesky), licence AGPL-3.0.
 // Modifié le 2026-10-16 pour NOFACE : nom, textes affichés (vouvoiement, ton sec), couleurs des repères,
 // redirections vers vesky.fr / skred.fr retirées.
+// Modifié le 2026-10-16 (bis) : styles de masque (rond, 444, emoji, image) et masquage des plaques d'immatriculation.
 // Aucune requête réseau après le chargement de la page (voir aussi la politique de sécurité dans _headers).
-import { createDetector, detectBoth, neededScore } from './detector.js';
+import { createDetector, detectBoth, neededScore, createPlateDetector } from './detector.js';
 
 // Ouvert en http (certains navigateurs, comme Opera sur iPhone, ne passent pas tout seuls en https) : le navigateur
 // coupe alors la copie hors ligne, l'export rapide et d'autres fonctions. On repart aussitôt sur l'adresse en https.
@@ -52,12 +53,17 @@ const TRACK = {
   // 22,9 % ; dès 15 % 12, 28, 25,0 %. Les cases en trop sont surtout des suivis distincts empilés, invisibles une fois en
   // noir ; la réunion couvre en plus les coins vides entre elles et fait de gros pavés dans les foules.
 };
+// Plaques d'immatriculation (option) : modèle à part, voir models/README.md.
+const PLATE_KEEP = 0.1;       // une plaque incertaine prolonge un masque déjà ouvert
+const PLATE_SURE = 0.25;      // seuil pour ouvrir un masque de plaque (réglage par défaut du modèle)
+const PLATE_EVERY = 2;        // vidéo : plaques cherchées une image analysée sur 2 ; le suivi bouche les trous
+const PLATE_PREF = 'noface.plaques';
 const DET_SIDE_DEEP = 1920;   // taille de l'image analysée (plus grand côté)
 const DET_SIDE = 1280;        // avec l'option « aller plus vite »
 const MAX_SIDE = 1920;        // plus grand côté de la vidéo produite
 const MAX_SIDE_PHOTO = 4096;
 
-const VERSION = '2026-10-16.1';   // affichée en bas de page, pour savoir quelle version tourne sur un téléphone
+const VERSION = '2026-10-16.2';   // affichée en bas de page, pour savoir quelle version tourne sur un téléphone
 const DEBUG = location.hostname === 'localhost' || new URLSearchParams(location.search).has('debug');
 
 const hasRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
@@ -85,8 +91,11 @@ const S = {
   sel: null,        // masque sélectionné : { manual } ou { track }
   nextId: 1,
   t: 0,
-  style: 'noir',
+  style: 'noir',     // 'noir' (carré), 'rond', '444', 'emoji', 'image'
   emoji: '😶',
+  sticker: null,    // image choisie pour le style 'image' (ImageBitmap), jamais envoyée nulle part
+  plates: false,    // masquer aussi les plaques
+  plateRaw: [],     // plaques trouvées, image par image
   keepAudio: true,
   job: null,        // tâche en cours (analyse ou création), annulable
   playing: false,
@@ -236,12 +245,13 @@ function startWorker() {
     }, 60000);
     const runner = {
       stop: () => w.terminate(),
-      detect: (bitmap, maxSide, always) => new Promise((ok, ko) => {
+      givePlates: (bytes) => w.postMessage({ type: 'plates', bytes }),
+      detect: (bitmap, maxSide, always, plates) => new Promise((ok, ko) => {
         if (broken) { bitmap.close(); ko(broken); return; }
         const id = nextId++;
         // Un fil tué sans prévenir (mémoire du téléphone saturée) ne répond plus jamais.
         pending.set(id, { ok, ko, timer: watch(id) });
-        w.postMessage({ type: 'detect', id, bitmap, w: bitmap.width, h: bitmap.height, maxSide, minScore: KEEP_SCORE, always, rule: RULE }, [bitmap]);
+        w.postMessage({ type: 'detect', id, bitmap, w: bitmap.width, h: bitmap.height, maxSide, minScore: KEEP_SCORE, always, rule: RULE, plates }, [bitmap]);
       }),
     };
     w.onmessage = (e) => {
@@ -252,18 +262,34 @@ function startWorker() {
       if (!p) return;
       pending.delete(m.id);
       clearTimeout(p.timer);
-      if (m.type === 'done') p.ok(m.boxes); else p.ko(new Error(m.message));
+      if (m.type === 'done') p.ok(Object.assign(m.boxes, { plates: m.plates })); else p.ko(new Error(m.message));
     };
     w.onerror = (e) => { if (window.diag) window.diag(`worker onerror : ${e.message} ${e.filename}:${e.lineno}`); clearTimeout(giveUp); resolve(null); breakDown('fil en panne'); };
     w.postMessage({ type: 'init' });
   });
 }
 
+// Modèle des plaques : chargé une fois au démarrage (comme tout le reste, avant le choix d'un fichier), puis remis
+// aux fils d'exécution. Ils ne créent leur moteur qu'à la première image où les plaques sont demandées.
+let PLATE_BYTES = null, plateLocal = null;
+async function loadPlates() {
+  try {
+    const r = await fetch('models/plaques.onnx');
+    if (r.ok) PLATE_BYTES = await r.arrayBuffer();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 async function localRunner() {
   const detect = await createDetector(new URL('.', location.href).href);
   return {
-    detect: async (bitmap, maxSide, always) => {
+    detect: async (bitmap, maxSide, always, plates) => {
       const boxes = await detectBoth(detect, bitmap, bitmap.width, bitmap.height, maxSide, KEEP_SCORE, always, RULE);
+      if (plates) {
+        plateLocal ||= await createPlateDetector(new URL('.', location.href).href, PLATE_BYTES);
+        boxes.plates = await plateLocal(bitmap, bitmap.width, bitmap.height, plates.tiles, plates.minScore);
+      }
       bitmap.close();
       return boxes;
     },
@@ -325,6 +351,14 @@ async function sharedFile() {
   });
 }
 
+// Option « plaques » : retenue d'une fois sur l'autre, sur l'appareil seulement (localStorage).
+function setupPlatesOption() {
+  const box = $('plates');
+  if (!PLATE_BYTES) { box.checked = false; box.disabled = true; box.parentNode.title = 'Indisponible sur ce navigateur'; return; }
+  try { box.checked = localStorage.getItem(PLATE_PREF) === '1'; } catch { /* stockage refusé */ }
+  box.addEventListener('change', () => { try { localStorage.setItem(PLATE_PREF, box.checked ? '1' : '0'); } catch { /* tant pis */ } });
+}
+
 async function init() {
   try {
     const cores = navigator.hardwareConcurrency || 2;
@@ -340,8 +374,12 @@ async function init() {
       noWorkers ? [] : Promise.all(Array.from({ length: wanted }, startWorker)).then((w) => w.filter(Boolean)),
       loadFastExport(),
       ANDROID ? androidHello() : keepOffline(),
+      loadPlates(),
     ]);
     S.runners = workers.length ? workers : [await localRunner()];
+    if (PLATE_BYTES) for (const r of S.runners) if (r.givePlates) r.givePlates(PLATE_BYTES);
+    setupPlatesOption();
+    if (document.fonts) document.fonts.load('32px "DejaVu Sans Mono"', '444').catch(() => {});
     // Safari garde la page quittée en mémoire, moteurs compris : un rechargement doublerait la mémoire prise.
     // On arrête les moteurs en quittant la page ; si Safari la ressort de sa mémoire, on la recharge.
     addEventListener('pagehide', () => { for (const r of S.runners) if (r.stop) r.stop(); });
@@ -515,6 +553,9 @@ async function scan() {
   S.detectMs = 0;
   S.detectCount = 0;
   S.found = [];
+  S.plates = !!PLATE_BYTES && $('plates').checked;
+  const plateResults = new Array(total);
+  const plateTiles = isPhoto() ? 4 : ($('fast').checked ? 0 : 2);
 
   // Les images sont distribuées aux fils d'exécution libres, au fur et à mesure.
   const free = [...S.runners], waiting = [];
@@ -535,7 +576,7 @@ async function scan() {
     if (canvas !== shown) return;
     vctx.drawImage(preview, 0, 0);
     vctx.fillStyle = '#000';
-    for (const b of boxes.filter(isSure).map(grow)) vctx.fillRect(b.x, b.y, b.w, b.h);
+    for (const b of boxes.filter(isSure).concat(boxes.plates || []).map(grow)) vctx.fillRect(b.x, b.y, b.w, b.h);
     shown = null;
   };
   // Analyse une image (déjà dessinée sur `canvas`) et range le résultat pour les images i à j.
@@ -547,13 +588,20 @@ async function scan() {
     if (job.cancelled || error) { release(runner); (await shot).close(); return; }
     const bitmap = await shot;
     const t0 = performance.now();
-    const always = isPhoto() || sent++ % LOW_EVERY === 0;   // compté par image envoyée, pas par numéro d'image
-    tasks.push(runner.detect(bitmap, side, always).then((found) => {
+    const n = sent++;
+    const always = isPhoto() || n % LOW_EVERY === 0;   // compté par image envoyée, pas par numéro d'image
+    const plates = S.plates && (isPhoto() || n % PLATE_EVERY === 0) ? { tiles: plateTiles, minScore: PLATE_KEEP } : null;
+    tasks.push(runner.detect(bitmap, side, always, plates).then((found) => {
       if (DEBUG) S.found.push({ found: found.map((b) => ({ ...b })), i, j });   // pour window.noface.rejudge
       const boxes = judge(found);
       for (const b of boxes) b.at = i;   // première image servie par cette analyse
       S.detectMs += performance.now() - t0;
       S.detectCount++;
+      if (plates) {
+        const pl = (found.plates || []).map((b) => ({ ...b, sure: b.s >= PLATE_SURE, at: i }));
+        for (let k = i; k <= j; k++) if (!plateResults[k]) plateResults[k] = pl;
+        boxes.plates = pl.filter(isSure);
+      }
       for (let k = i; k <= j; k++) if (!results[k]) { results[k] = boxes; done++; }
       showPreview(canvas, boxes);
       progress();
@@ -588,6 +636,7 @@ async function scan() {
   S.scanMs = performance.now() - started;
   if (window.diag) window.diag(`analyse finie : ${total} images, ${(S.scanMs / 1000).toFixed(1)} s, ${S.seekFallbacks} reprises une par une, ${S.runners.length} fils, ${Math.round(S.detectMs / Math.max(1, S.detectCount))} ms par détection`);
   S.raw = results;
+  S.plateRaw = S.plates ? Array.from(plateResults, (r) => r || []) : [];
   buildTracks(results);
   openReview(0);
 }
@@ -695,7 +744,21 @@ function union(a, b) {
 
 const lerp = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, w: a.w + (b.w - a.w) * k, h: a.h + (b.h - a.h) * k });
 
+// Visages et plaques sont suivis chacun de leur côté (une plaque ne prolonge jamais un visage), puis réunis.
 function buildTracks(results) {
+  const faces = trackBoxes(results);
+  const N = results.length;
+  if (S.plateRaw.length === N) {
+    const plates = trackBoxes(S.plateRaw);
+    for (const t of plates.tracks) { t.plate = true; t.id = faces.tracks.length + t.id; }
+    faces.tracks.push(...plates.tracks);
+    for (let j = 0; j < N; j++) faces.frames[j].push(...plates.frames[j]);
+  }
+  S.tracks = faces.tracks;
+  S.frames = faces.frames;
+}
+
+function trackBoxes(results) {
   const N = results.length;
   const tracks = [];
   let active = [];
@@ -776,8 +839,7 @@ function buildTracks(results) {
       else for (const r of near) frames[j].push({ ...grow(r), track: t });
     }
   }
-  S.tracks = tracks;
-  S.frames = frames;
+  return { tracks, frames };
 }
 
 /* ---------- Dessin des masques ---------- */
@@ -807,18 +869,57 @@ function paint(ctx, t, edit) {
   const auto = S.frames[j] || [];
   const rects = [...auto.filter((b) => !isOff(b.track, j)), ...manualAt(t).map(manualRect)];
 
-  // D'abord les cases pleines : c'est elles qui protègent.
+  // D'abord les fonds pleins et opaques : c'est eux qui protègent. Chaque style couvre toute la case, au moins.
+  // Les plaques ont toujours un rectangle noir, quel que soit le style choisi pour les visages.
+  const plate = (r) => r.track && r.track.plate;
+  const round = S.style === 'rond' || S.style === '444';
   ctx.fillStyle = '#000';
-  for (const r of rects) ctx.fillRect(Math.floor(r.x), Math.floor(r.y), Math.ceil(r.w) + 1, Math.ceil(r.h) + 1);
+  for (const r of rects) {
+    if (round && !plate(r)) continue;
+    ctx.fillRect(Math.floor(r.x), Math.floor(r.y), Math.ceil(r.w) + 1, Math.ceil(r.h) + 1);
+  }
+  const faces = rects.filter((r) => !plate(r));
+  if (round) {
+    // Disque qui passe par les quatre coins de la case (plus 2 pixels) : il la recouvre entièrement.
+    ctx.fillStyle = S.style === '444' ? '#0c0f14' : '#000';
+    for (const r of faces) {
+      ctx.beginPath();
+      ctx.arc(r.x + r.w / 2, r.y + r.h / 2, Math.hypot(r.w, r.h) / 2 + 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (S.style === '444') {
+      // Le logo de @444.solobt : anneau gris fin et « 444 » blanc cassé, posés sur le disque.
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const r of faces) {
+        const R = Math.hypot(r.w, r.h) / 2, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+        ctx.strokeStyle = '#c8c8c8';
+        ctx.lineWidth = Math.max(1, R * 0.025);
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * 0.88, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#f0f0ec';
+        ctx.font = `${Math.max(6, Math.round(R * 0.42))}px "DejaVu Sans Mono", monospace`;
+        ctx.fillText('444', cx, cy);
+      }
+    }
+  }
 
-  // L'émoji est seulement posé par-dessus la case, il ne la remplace jamais.
+  // L'émoji et l'image sont seulement posés par-dessus la case noire, ils ne la remplacent jamais :
+  // une image transparente laisse voir le noir, pas le visage.
   if (S.style === 'emoji') {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (const r of rects) {
+    for (const r of faces) {
       const s = Math.min(r.w, r.h);
       ctx.font = `${Math.round(s * 0.82)}px serif`;
       ctx.fillText(S.emoji, r.x + r.w / 2, r.y + r.h / 2 + s * 0.06);
+    }
+  } else if (S.style === 'image' && S.sticker) {
+    const iw = S.sticker.width, ih = S.sticker.height;
+    for (const r of faces) {
+      const k = Math.max(r.w, r.h) * 1.1 / Math.max(iw, ih);
+      ctx.drawImage(S.sticker, r.x + r.w / 2 - iw * k / 2, r.y + r.h / 2 - ih * k / 2, iw * k, ih * k);
     }
   }
 
@@ -1077,16 +1178,66 @@ $('prev').onclick = () => { stopPlay(); goTo(S.t - 1 / S.fps); };
 $('next').onclick = () => { stopPlay(); goTo(S.t + 1 / S.fps); };
 $('play').onclick = togglePlay;
 
-// Le bouton carré fait défiler les styles de masque.
-const STYLES = [['noir', ''], ['emoji', '😶'], ['emoji', '💀'], ['emoji', '🐸']];
-$('styleBtn').onclick = () => {
-  const i = STYLES.findIndex(([st, em]) => st === S.style && (st === 'noir' || em === S.emoji));
-  const [st, em] = STYLES[(i + 1) % STYLES.length];
-  S.style = st;
-  if (em) S.emoji = em;
-  $('styleBtn').innerHTML = st === 'noir' ? '<span class="sq"></span>' : em;
+// Le bouton carré ouvre le choix du style de masque (visages seulement ; les plaques restent en noir).
+function showStyle() {
+  const btn = $('styleBtn');
+  btn.textContent = '';
+  if (S.style === 'noir') btn.innerHTML = '<span class="sq"></span>';
+  else if (S.style === 'rond') btn.innerHTML = '<span class="sq ci"></span>';
+  else if (S.style === '444') btn.innerHTML = '<span class="mini444">444</span>';
+  else if (S.style === 'emoji') btn.textContent = S.emoji;
+  else btn.innerHTML = '<span class="mono">IMG</span>';
+  for (const o of document.querySelectorAll('#maskSheet [data-style]')) o.setAttribute('aria-checked', String(o.dataset.style === S.style));
+  for (const o of document.querySelectorAll('#maskSheet [data-emoji]')) o.setAttribute('aria-pressed', String(S.style === 'emoji' && o.dataset.emoji === S.emoji));
+  $('emojiPanel').hidden = S.style !== 'emoji';
+  $('stickerPanel').hidden = S.style !== 'image';
+  $('emojiSw').textContent = S.emoji;
   renderReview();
-};
+}
+function setStyle(st) {
+  if (st === 'image' && !S.sticker) { $('stickerFile').click(); $('stickerPanel').hidden = false; return; }
+  S.style = st;
+  showStyle();
+}
+$('styleBtn').onclick = () => { $('maskSheet').hidden = false; showStyle(); };
+$('maskClose').onclick = () => { $('maskSheet').hidden = true; };
+$('maskSheet').addEventListener('click', (e) => { if (e.target === $('maskSheet')) $('maskSheet').hidden = true; });
+for (const o of document.querySelectorAll('#maskSheet [data-style]')) o.onclick = () => setStyle(o.dataset.style);
+for (const o of document.querySelectorAll('#maskSheet [data-emoji]')) o.onclick = () => { S.emoji = o.dataset.emoji; $('emojiInput').value = ''; setStyle('emoji'); };
+// N'importe quel émoji tapé au clavier : on garde le premier caractère visible (un émoji composé compte pour un).
+$('emojiInput').addEventListener('input', (e) => {
+  const v = e.target.value.trim();
+  const first = v && (typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter().segment(v)][0].segment : [...v][0]);
+  if (!first || !/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(first)) { $('emojiNote').textContent = v ? 'Un émoji. Pas un roman.' : ''; return; }
+  $('emojiNote').textContent = '';
+  S.emoji = first;
+  setStyle('emoji');
+});
+// Image choisie sur l'appareil : lue sur place (createImageBitmap), jamais envoyée. Réduite à 512 px au plus.
+$('stickerFile').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const full = await createImageBitmap(f);
+    const k = Math.min(1, 512 / Math.max(full.width, full.height));
+    const img = k < 1 ? await createImageBitmap(full, { resizeWidth: Math.round(full.width * k), resizeHeight: Math.round(full.height * k), resizeQuality: 'high' }) : full;
+    if (img !== full) full.close();
+    if (S.sticker) S.sticker.close();
+    S.sticker = img;
+    const c = $('stickerSw');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    x.clearRect(0, 0, 64, 64);
+    const s = 64 / Math.max(img.width, img.height);
+    x.drawImage(img, 32 - img.width * s / 2, 32 - img.height * s / 2, img.width * s, img.height * s);
+    $('stickerNote').textContent = 'Image chargée. Elle reste ici.';
+    S.style = 'image';
+    showStyle();
+  } catch {
+    $('stickerNote').textContent = "Image illisible. Essayez un PNG.";
+  }
+});
 $('audioBtn').onclick = () => {
   S.keepAudio = !S.keepAudio;
   $('audioBtn').classList.toggle('on', S.keepAudio);
@@ -1436,6 +1587,7 @@ function resetAll() {
   S.tracks = [];
   S.frames = [];
   S.raw = [];
+  S.plateRaw = [];
   S.manual = [];
   S.sel = null;
   S.t = 0;

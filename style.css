@@ -407,3 +407,31 @@ a:hover { text-decoration-color: var(--fg); }
 .verif .limits { padding-top: 4px; }
 .verif .cta { margin: 40px auto 0; }
 .pagehr { margin: 40px 0 0; border: 0; border-top: 1px solid var(--line); }
+
+/* ---------- Style du masque (ajout 2026-10-16) ---------- */
+
+.ctl .sq.ci { border-radius: 50%; }
+.ctl .mini444 { width: 24px; height: 24px; border-radius: 50%; background: var(--bg); outline: 1px solid var(--ring); display: flex; align-items: center; justify-content: center; font-size: 7px; letter-spacing: 0; }
+.ctl .mono { font-size: 9px; letter-spacing: 0.15em; }
+.styles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 0 0 18px; }
+.styles button { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0 10px; border: 1px solid transparent; }
+.styles button[aria-checked="true"] { border-color: var(--ring); }
+.styles button:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.styles .sw { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.styles .sw .sq { width: 30px; height: 30px; background: #000; outline: 1px solid var(--line); }
+.styles .sw .sq.ci { border-radius: 50%; }
+.styles .sw.emo { font-size: 26px; line-height: 1; }
+.styles .sw canvas { width: 32px; height: 32px; outline: 1px solid var(--line); }
+.logo444 { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); box-shadow: none; outline: 1px solid var(--ring); outline-offset: -3px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--fg); }
+.styles .nm { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--grey); padding-left: 0.25em; }
+.styles button[aria-checked="true"] .nm { color: var(--fg); }
+.panel { margin: 0 0 22px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.emojis { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.emojis button { all: unset; cursor: pointer; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid transparent; }
+.emojis button[aria-pressed="true"] { border-color: var(--ring); }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.field input { flex: 1; min-width: 0; max-width: 180px; background: transparent; color: var(--fg); border: 0; border-bottom: 1px solid var(--line); padding: 6px 2px; font: 400 16px/1.2 var(--mono); text-align: center; border-radius: 0; }
+.field input:focus { outline: none; border-bottom-color: var(--fg); }
+.pickSticker { align-self: flex-start; border: 1px solid var(--line); padding: 12px 14px; }
+.pickSticker input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+#emojiNote:empty { display: none; }

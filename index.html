@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- NOFACE : version modifiée de Vesky (https://github.com/Nctrn17/vesky), licence AGPL-3.0.
-     Modifié le 2026-10-16 : nom, textes (vouvoiement, ton sec), mise en page, police, couleurs, icônes. -->
+     Modifié le 2026-10-16 : nom, textes (vouvoiement, ton sec), mise en page, police, couleurs, icônes.
+     Puis : choix du style de masque, option plaques d'immatriculation. -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -38,6 +39,7 @@
   <p id="homeError" class="error" hidden></p>
   <footer class="foot">
     <span id="footNote">Aucun visage ne sort d'ici. Même pas le vôtre.</span>
+    <label class="fast"><input type="checkbox" id="plates"> Masquer aussi les plaques (plus lent)</label>
     <label class="fast"><input type="checkbox" id="fast"> Mode rapide (rate les très petits visages)</label>
     <a href="verifier.html">Vérifier</a>
     <a href="https://github.com/FR44K-ll/noface">Code source</a>
@@ -62,6 +64,34 @@
       <li><span class="n">3</span><span class="t">Touchez « Ajouter », en haut à droite</span><span></span></li>
     </ol>
     <button class="close" id="iosClose" type="button">Compris</button>
+  </div>
+</div>
+
+<!-- Style du masque (visages) -->
+<div class="sheetBack" id="maskSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="maskTitle">
+    <p class="label">Masque</p>
+    <h2 id="maskTitle">Style</h2>
+    <p class="note">Le carré noir reste le plus sûr. Le reste, c'est du style. Dans tous les cas, un fond noir plein passe dessous. Les plaques restent en noir.</p>
+    <div class="styles" role="radiogroup" aria-label="Style du masque">
+      <button type="button" role="radio" data-style="noir"><span class="sw"><span class="sq"></span></span><span class="nm">Carré</span></button>
+      <button type="button" role="radio" data-style="rond"><span class="sw"><span class="sq ci"></span></span><span class="nm">Rond</span></button>
+      <button type="button" role="radio" data-style="444"><span class="sw"><span class="logo444">444</span></span><span class="nm">444</span></button>
+      <button type="button" role="radio" data-style="emoji"><span class="sw emo" id="emojiSw">😶</span><span class="nm">Émoji</span></button>
+      <button type="button" role="radio" data-style="image"><span class="sw"><canvas id="stickerSw" width="64" height="64"></canvas></span><span class="nm">Image</span></button>
+    </div>
+    <div class="panel" id="emojiPanel" hidden>
+      <div class="emojis">
+        <button type="button" data-emoji="😶">😶</button><button type="button" data-emoji="💀">💀</button><button type="button" data-emoji="🐸">🐸</button><button type="button" data-emoji="🙈">🙈</button><button type="button" data-emoji="👽">👽</button><button type="button" data-emoji="🤖">🤖</button><button type="button" data-emoji="🖤">🖤</button><button type="button" data-emoji="🦝">🦝</button>
+      </div>
+      <label class="field"><span class="label">Autre émoji</span><input type="text" id="emojiInput" autocomplete="off" spellcheck="false" placeholder="Tapez-en un"></label>
+      <p class="note" id="emojiNote"></p>
+    </div>
+    <div class="panel" id="stickerPanel" hidden>
+      <label class="link pickSticker"><input type="file" id="stickerFile" accept="image/png,image/webp,image/gif,image/jpeg"> Choisir une image</label>
+      <p class="note" id="stickerNote">PNG transparent conseillé. L'image reste sur votre appareil.</p>
+    </div>
+    <button class="close" id="maskClose" type="button">Appliquer</button>
   </div>
 </div>
 

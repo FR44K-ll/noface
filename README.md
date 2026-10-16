@@ -23,9 +23,27 @@ peuvent être défaits par une IA. Un carré plein, non : il n'y a plus d'image 
 3. Vous vérifiez : vous ajoutez un masque là où un visage a été raté, vous retirez un masque posé à tort.
 4. Le fichier est entièrement refait : le lieu, la date et le modèle du téléphone du fichier d'origine disparaissent.
 
+### Styles de masque
+
+Bouton carré de l'écran de vérification : carré noir (par défaut, le plus sûr), rond, logo « 444 », émoji (une liste
+ou n'importe lequel tapé au clavier), ou une image choisie sur l'appareil (PNG transparent conseillé). Quel que soit le
+style, un fond opaque couvre toute la case avant le reste : le rond et le 444 sont des disques qui passent par les quatre
+coins de la case, l'émoji et l'image sont posés sur un carré noir. Une image transparente laisse voir le noir, jamais
+le visage. L'image choisie est lue sur place, jamais envoyée. Même rendu pour la photo et la vidéo.
+
+### Plaques d'immatriculation (option)
+
+Case « Masquer aussi les plaques » sur l'accueil, **décochée par défaut** et retenue sur l'appareil. Les plaques
+reçoivent toujours un rectangle noir, quel que soit le style des visages, et se retirent ou se remettent à la main
+comme un visage. Décochée par défaut parce que l'analyse d'une vidéo devient environ 3 fois plus lente (mesuré sur
+ordinateur, davantage sur téléphone) et que la plupart des vidéos de manifestation n'en ont pas besoin. Le modèle est
+chargé avec le reste du site, avant le choix d'un fichier : aucune requête ne part ensuite, case cochée ou non.
+Modèle : YOLOv9-t d'[open-image-models](https://github.com/ankandrew/open-image-models), licence MIT, 7,8 Mo
+(`models/README.md`). Il peut rater une plaque lointaine, de biais ou dans le noir : vérifiez.
+
 ## Ce que l'outil ne fait pas
 
-- Il ne cache ni les vêtements, ni les tatouages, ni la voix, ni le lieu.
+- Il ne cache ni les vêtements, ni les tatouages, ni la voix, ni le lieu. Les plaques, seulement si l'option est cochée.
 - Il peut rater un visage. Regarder le résultat avant de poster reste indispensable.
 - Il ne promet pas une protection totale.
 
@@ -84,9 +102,15 @@ python test/make-test-video.py      # besoin : opencv-python, scikit-image, ffmp
 node test/run-test.mjs              # Node 22+, ou node --experimental-websocket sur Node 20
 python test/make-faces-pair.py
 node test/test-sans-trace.mjs
+python test/test-masques.py
 ```
 
 Chrome se choisit avec la variable `CHROME` (par exemple `CHROME=/usr/bin/google-chrome`).
+`test-masques.py` (Playwright, `pip install playwright opencv-python`) vérifie les styles de masque et les plaques :
+deux photos identiques sauf le visage donnent, dans chaque case et pour chaque style, des pixels identiques ; une image
+entièrement transparente donne en vidéo le même noir que le carré ; les plaques d'une photo CC0 (téléchargée par le
+script depuis Wikimedia Commons) et d'une vidéo tirée de cette photo finissent noires ; aucune requête après chargement.
+
 `run-test.mjs` analyse une vidéo dont la position des visages est connue, exporte, puis vérifie image par image
 qu'aucun visage n'est visible, que les métadonnées ont disparu et qu'aucune requête n'est partie.
 
@@ -110,6 +134,7 @@ Seul `404.html` renvoie vers `/noface/` en dur.
 
 - [Vesky](https://github.com/Nctrn17/vesky), licence AGPL-3.0 : le projet d'origine.
 - [YuNet_n](https://github.com/ShiqiYu/libfacedetection.train), licence BSD-3, réentraîné par Vesky (`models/`).
+- Détecteur de plaques YOLOv9-t 512 d'[open-image-models](https://github.com/ankandrew/open-image-models) (ankandrew), licence MIT (`models/plaques.onnx`, `models/LICENSE-plaques.txt`).
 - [ONNX Runtime Web](https://github.com/microsoft/onnxruntime), licence MIT (`vendor/ort/`).
 - [Mediabunny](https://github.com/Vanilagy/mediabunny), licence MPL-2.0 (`vendor/mediabunny/`).
 - [DejaVu Sans Mono](https://dejavu-fonts.github.io/), licence Bitstream Vera, modifications DejaVu dans le domaine public (`vendor/fonts/`).
